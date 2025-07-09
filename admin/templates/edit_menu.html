@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Главная страница{% endblock %}
+{% block content %}
+<div class="mx-auto p-2 md:p-2">
+    <div class="flex flex-col md:flex-row gap-4 md:gap-2">
+        <div class="flex-1 rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
+            <h3 class="text-lg font-semibold text-gray-800">Создание нового меню:</h3>
+            <br>
+            <form method="post" action="/create_menu" class="space-y-4">
+                <label class="text-sm font-medium text-gray-700">Введите название нового меню:</label>
+                <input type="text" name="menu_key" required
+                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500">
+                <div>
+                    <p class="text-theme-sm text-gray-700 dark:text-gray-400">
+                        <label class="text-sm font-medium text-gray-700">При создании нового меню не дублируйте уже имеющиеся названия. Используйте только английский язык. Не применяйте специальные символы за исключением "_".</label>
+                    </p>
+                </div>
+                <button type="submit"
+                    class="w-full py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 transition-colors">Создать
+                    новое меню</button>
+            </form>
+        </div>
+
+        <div class="flex-1 rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
+            <h3 class="text-lg font-semibold text-gray-800">Выбор меню для редактирования:</h3>
+            <br>
+            <form method="get" action="/edit_menu" class="space-y-4">
+                <label class="text-sm font-medium text-gray-700">Выберите меню для редактирования:</label>
+                <br>
+                <select name="menu_key"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500"
+                    onchange="this.form.submit()">
+                    {% for key in menu_keys %}
+                    <option value="{{ key }}" {% if key==current_key %}selected{% endif %}>{{ key }}</option>
+                    {% endfor %}
+                </select>
+                <div>
+                    <p class="text-theme-sm text-gray-700 dark:text-gray-400">
+                        <label class="text-sm font-medium text-gray-700">Меню с названием "<strong class="text-yellow-600">main</strong>" является основным меню бота и его удаление недопустимо.</label>
+                    </p>
+                </div>
+            </form>
+            <!-- Контейнер для кнопок "Открыть меню" и "Удалить меню" -->
+            <div class="flex gap-4 mt-4">
+                <!-- Форма для удаления меню -->
+                {% if current_key != 'main' %}
+                <form method="post" action="/delete_menu"
+                    onsubmit="return confirm('Удалить меню {{ current_key }}? Это действие нельзя отменить.');"
+                    class="w-full">
+                    <input type="hidden" name="menu_key" value="{{ current_key }}">
+                    <button type="submit"
+                        class="w-full py-2 bg-error-500 text-white rounded-md hover:bg-error-600 transition-colors">
+                        Удалить открытое меню
+                    </button>
+                </form>
+                {% else %}
+                <button type="button" class="w-full py-2 bg-gray-300 text-white rounded-md cursor-not-allowed">
+                    Удаление основного меню невозможно
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
+    <h3 class="text-lg font-semibold text-gray-800">Загрузка картинки для меню:</h3>
+    <br>
+    <label class="text-sm font-medium text-gray-700">Загрузите новую картинку для меню:</label>
+    {% if current_menu.photo %}
+        <img src="{{ current_menu.photo }}" alt="Фото меню" class="menu-photo mb-4 max-w-full rounded-lg shadow-md">
+        <div>
+            <label class="inline-flex items-center">
+                <input type="checkbox" name="remove_photo" class="mr-2"> Удалить картинку
+            </label>
+        </div>
+    {% endif %}
+
+    <!-- Загрузка нового фото -->
+    <input type="file" name="photo_file" accept="image/*"
+        class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500">
+
+    <br><br>
+
+    <!-- Выбор уже загруженной картинки -->
+    <label class="text-sm font-medium text-gray-700">Или выберите одно из уже загруженных фото:</label>
+    <div class="space-y-2">
+        {% for img in image_files %}
+            <div class="flex items-center space-x-2">
+                <input type="radio" name="selected_photo" value="{{ img }}" id="img_{{ loop.index }}"
+                    {% if current_menu.photo == img %}checked{% endif %}>
+                <label for="img_{{ loop.index }}" class="cursor-pointer">
+                    <img src="{{ img }}" alt="Фото меню" class="w-16 h-16 object-cover rounded-md">
+                </label>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+
+
+<div class="mx-auto p-2 md:p-2">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
+            <h3 class="text-lg font-semibold text-gray-800">Редактирование меню:</h3>
+<form method="post" action="/update" enctype="multipart/form-data" class="space-y-6 mt-6">
+    <input type="hidden" name="old_menu_key" value="{{ current_key }}">
+
+    <label class="text-sm font-medium text-gray-700">Редактирование названия меню:</label>
+    <br>
+    <label class="text-sm font-medium text-gray-700">Меню с названием "<strong class="text-yellow-600">main</strong>" является основным и его редактирование недопустимо.</label>
+    <input type="text" name="new_menu_key" value="{{ current_key }}" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500">
+
+    <label class="text-sm font-medium text-gray-700">Редактирование текста меню:</label>
+    <textarea name="text" rows="4" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500">{{ current_menu.text }}</textarea>
+<br>
+<hr>
+
+<h3 class="text-lg font-semibold text-gray-800 mb-6">Редактирование кнопок меню:</h3>
+<div id="buttons-container">
+    {% for btn in current_menu.buttons %}
+    <div class="button-row flex items-center space-x-6 mb-6 p-5 border-b border-gray-300 hover:bg-gray-50 transition-all duration-200">
+        <!-- Кнопки перемещения -->
+        <button type="button" class="move-btn move-up p-3 bg-gray-700 text-white rounded-full hover:bg-gray-800 hover:scale-110 transition-all" onclick="moveUp(this)">↑</button>
+        <button type="button" class="move-btn move-down p-3 bg-gray-700 text-white rounded-full hover:bg-gray-800 hover:scale-110 transition-all" onclick="moveDown(this)">↓</button>
+
+        <!-- Поля ввода с минималистичным стилем и эффектом фокуса -->
+        <input type="text" name="button_texts" value="{{ btn.text }}" required class="w-48 px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200">
+        
+        <!-- Селектор с доступными меню (button_callbacks) - в два раза шире -->
+        <select name="button_callbacks" class="px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" style="width: 384px;">
+            <option value="">Отсутствует</option>
+            {% for key in menu_keys %}
+                <option value="{{ key }}" {% if key == btn.callback %}selected{% endif %}>{{ key }}</option>
+            {% endfor %}
+        </select>
+        
+        <!-- Поле для ссылки (button_links) -->
+        <input type="text" name="button_links" value="{{ btn.url if btn.url else '' }}" class="w-48 px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200">
+        
+        <!-- Селектор для групп (button_groups) - в три раза шире -->
+        <select name="button_groups" class="px-2 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200" style="width: 576px;">
+            <option value="1" {% if current_menu.button_groups[loop.index0] == 1 %}selected{% endif %}>1 в ряд</option>
+            <option value="2" {% if current_menu.button_groups[loop.index0] == 2 %}selected{% endif %}>2 в ряд</option>
+        </select>
+
+        <!-- Кнопка удаления с SVG значком -->
+        <button type="button" class="remove-btn text-red-500 hover:text-red-700 text-2xl hover:scale-125 transition-all duration-200 p-2 rounded-full flex items-center justify-center" onclick="removeButton(this)">
+            <svg width="20" height="20" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6">
+                <rect x="0" y="0" width="26" height="26" rx="8" fill="none" />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 26" fill="#ff0000" x="0" y="0" width="26" height="26">
+                    <path fill="#ff0000"
+                        d="M11.5-.031c-1.958 0-3.531 1.627-3.531 3.594V4H4c-.551 0-1 .449-1 1v1H2v2h2v15c0 1.645 1.355 3 3 3h12c1.645 0 3-1.355 3-3V8h2V6h-1V5c0-.551-.449-1-1-1h-3.969v-.438c0-1.966-1.573-3.593-3.531-3.593h-3zm0 2.062h3c.804 0 1.469.656 1.469 1.531V4H10.03v-.438c0-.875.665-1.53 1.469-1.53zM6 8h5.125c.124.013.247.031.375.031h3c.128 0 .25-.018.375-.031H20v15c0 .563-.437 1-1 1H7c-.563 0-1-.437-1-1V8zm2 2v12h2V10H8zm4 0v12h2V10h-2zm4 0v12h2V10h-2z" />
+                </svg>
+            </svg>
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+
+
+
+
+
+
+
+    <button type="button" class="w-full py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 transition-colors" onclick="addButton()">Добавить новую кнопку</button>
+    <br>
+        <button type="submit" class="w-full py-2 bg-success-500 text-white rounded-md hover:bg-success-600 transition-colors">Сохранить изменения</button>
+</form>
+    </div>
+    </div>
+    </div>
+    
+
+<script>
+function addButton() {
+    const container = document.getElementById("buttons-container");
+    const div = document.createElement("div");
+    div.className = "button-row flex items-center space-x-6 mb-6 p-5 border-b border-gray-300 hover:bg-gray-50 transition-all duration-200";
+    div.innerHTML = `
+        <!-- Кнопки перемещения -->
+        <button type="button" class="move-btn move-up p-3 bg-gray-700 text-white rounded-full hover:bg-gray-800 hover:scale-110 transition-all" onclick="moveUp(this)">↑</button>
+        <button type="button" class="move-btn move-down p-3 bg-gray-700 text-white rounded-full hover:bg-gray-800 hover:scale-110 transition-all" onclick="moveDown(this)">↓</button>
+
+        <!-- Поля ввода с минималистичным стилем и эффектом фокуса -->
+        <input type="text" name="button_texts" placeholder="Текст кнопки" required class="w-48 px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200">
+        
+        <!-- Селектор с доступными меню (button_callbacks) - в два раза шире -->
+        <select name="button_callbacks" class="px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" style="width: 384px;">
+            <option value="">Отсутствует</option>
+            <!-- Можно добавить динамическое содержимое с меню -->
+        </select>
+        
+        <!-- Поле для ссылки (button_links) -->
+        <input type="text" name="button_links" placeholder="Ссылка (если есть)" class="w-48 px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200">
+        
+        <!-- Селектор для групп (button_groups) - в три раза шире -->
+        <select name="button_groups" class="px-2 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200" style="width: 576px;">
+            <option value="1">1 в ряд</option>
+            <option value="2">2 в ряд</option>
+        </select>
+
+        <!-- Кнопка удаления с SVG значком -->
+        <button type="button" class="remove-btn text-red-500 hover:text-red-700 text-2xl hover:scale-125 transition-all duration-200 p-2 rounded-full flex items-center justify-center" onclick="removeButton(this)">
+            <svg width="20" height="20" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6">
+                <rect x="0" y="0" width="26" height="26" rx="8" fill="none" />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 26" fill="#ff0000" x="0" y="0" width="26" height="26">
+                    <path fill="#ff0000"
+                        d="M11.5-.031c-1.958 0-3.531 1.627-3.531 3.594V4H4c-.551 0-1 .449-1 1v1H2v2h2v15c0 1.645 1.355 3 3 3h12c1.645 0 3-1.355 3-3V8h2V6h-1V5c0-.551-.449-1-1-1h-3.969v-.438c0-1.966-1.573-3.593-3.531-3.593h-3zm0 2.062h3c.804 0 1.469.656 1.469 1.531V4H10.03v-.438c0-.875.665-1.53 1.469-1.53zM6 8h5.125c.124.013.247.031.375.031h3c.128 0 .25-.018.375-.031H20v15c0 .563-.437 1-1 1H7c-.563 0-1-.437-1-1V8zm2 2v12h2V10H8zm4 0v12h2V10h-2zm4 0v12h2V10h-2z" />
+                </svg>
+            </svg>
+        </button>
+    `;
+    container.appendChild(div);
+}
+
+function removeButton(btn) {
+    btn.parentElement.remove();
+}
+</script>
+
+{% endblock %}

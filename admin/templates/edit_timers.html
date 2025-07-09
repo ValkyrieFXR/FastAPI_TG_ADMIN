@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Настройка таймеров{% endblock %}
+{% block content %}
+<h2>Настройка таймеров меню "{{ current_key }}"</h2>
+
+<form method="get" action="/edit_timers">
+  <label for="menu_select">Выберите меню для настройки таймеров:</label>
+  <select name="menu_key" id="menu_select" onchange="this.form.submit()">
+    {% for key in menu_keys %}
+      <option value="{{ key }}" {% if key == current_key %}selected{% endif %}>{{ key }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<form method="post" action="/save_timers">
+  <input type="hidden" name="menu_key" value="{{ current_key }}">
+  <input type="hidden" name="total_buttons" value="{{ buttons|length }}">
+
+  <label>Открыть всё меню с:</label>
+  <input type="datetime-local" name="menu_start" value="{{ menu.get('timers', {}).get('menu_start', '') }}"><br><br>
+
+  <h3>Таймеры для кнопок:</h3>
+  {% for btn in buttons %}
+    <div style="margin-bottom: 12px; padding: 10px; border: 1px solid #ccc;">
+      <strong>{{ btn.text }}</strong><br>
+      <input type="hidden" name="button_text_{{ loop.index }}" value="{{ btn.text }}">
+      
+      <!-- Если кнопка завершила таймер, очищаем поле -->
+      <input type="datetime-local" name="button_timer_{{ loop.index }}" 
+        value="{% if button_timers[btn.text] %}{{ button_timers[btn.text] }}{% else %} {% endif %}">
+      
+      <span>
+        {{ button_statuses[btn.text] }}  <!-- Используем переданный статус кнопки -->
+      </span>
+      <!-- Добавляем JavaScript для проверки, активна ли кнопка -->
+      <a href="javascript:void(0)" onclick="checkButtonStatus('{{ btn.text }}')" style="margin-left: 10px;">Публиковать сейчас</a>
+    </div>
+  {% endfor %}
+  <br>
+  <button type="submit">Сохранить</button>
+</form>
+
+<hr>
+
+<!-- JavaScript для проверки состояния кнопки и вывода alert -->
+<script>
+  function checkButtonStatus(buttonText) {
+    var buttonStatus = {{ button_statuses | tojson }};
+    if (buttonStatus[buttonText] === "Активна") {
+      alert("Кнопка уже активна");
+    } else {
+      // Если кнопка не активна, отправляем форму для публикации
+      window.location.href = '/publish_now?menu_key={{ current_key }}&button=' + buttonText;
+    }
+  }
+</script>
+{% endblock %}

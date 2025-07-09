@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Главная страница{% endblock %}
+{% block content %}
+        <div class="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6">
+          <div class="grid grid-cols-12 gap-4 md:gap-6">
+            <div class="col-span-12 space-y-6 xl:col-span-7">
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
+                <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
+                    <svg class="fill-gray-800 dark:fill-white/90" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-13h-2v2h2V7zm0 4h-2v6h2v-6z" />
+                    </svg>
+                  </div>
+                  <div class="mt-6 space-y-3">
+                    <button id="start-bot" class="bot-action start-btn w-full rounded-lg border border-green-500 px-4 py-2 text-sm font-semibold text-green-600 transition mt-3 text-lg font-semibold text-gray-800 dark:text-white/90">
+                      Запустить бота
+                    </button>
+                    <button id="stop-bot" class="bot-action stop-btn w-full rounded-lg border border-red-500 px-4 py-2 text-sm font-semibold text-red-600 transition mt-3 text-lg font-semibold text-gray-800 dark:text-white/90">
+                      Остановить бота
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <script>
+          document.getElementById('start-bot').addEventListener('click', function() {
+            fetch('/start-bot', {
+              method: 'POST'
+            }).then(response => {
+              if (response.ok) {
+                alert('Бот запущен');
+                location.reload();  // Перезагружаем страницу для обновления статуса
+              }
+            });
+          });
+
+          document.getElementById('stop-bot').addEventListener('click', function() {
+            fetch('/stop-bot', {
+              method: 'POST'
+            }).then(response => {
+              if (response.ok) {
+                alert('Бот остановлен');
+                location.reload();  // Перезагружаем страницу для обновления статуса
+              }
+            });
+          });
+        </script>
+{% endblock %}
+
+
+

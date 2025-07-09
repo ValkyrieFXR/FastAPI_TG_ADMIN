@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Лог таймеров{% endblock %}
+{% block content %}
+<h2>История созданных таймеров</h2>
+
+<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+  <tr>
+    <th>Меню</th>
+    <th>Кнопка</th>
+    <th>Время открытия</th>
+    <th>Создано в</th>
+    <th>Действия</th>
+  </tr>
+  {% for timer in timers_log %}
+  <tr>
+    <td>{{ timer.menu_key }}</td>
+    <td>{{ timer.button_text }}</td>
+    <td>{{ timer.timer_time }}</td>
+    <td>{{ timer.created_at }}</td>
+    <td>
+      <form method="post" action="/delete_timer" style="display:inline;">
+        <input type="hidden" name="timer_id" value="{{ timer.id }}">
+        <button type="submit" onclick="return confirm('Удалить этот таймер?')">Удалить</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5">Таймеры не найдены.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
