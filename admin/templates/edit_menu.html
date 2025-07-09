@@ -76,26 +76,6 @@
             </label>
         </div>
     {% endif %}
-
-    <!-- Загрузка нового фото -->
-    <input type="file" name="photo_file" accept="image/*"
-        class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500">
-
-    <br><br>
-
-    <!-- Выбор уже загруженной картинки -->
-    <label class="text-sm font-medium text-gray-700">Или выберите одно из уже загруженных фото:</label>
-    <div class="space-y-2">
-        {% for img in image_files %}
-            <div class="flex items-center space-x-2">
-                <input type="radio" name="selected_photo" value="{{ img }}" id="img_{{ loop.index }}"
-                    {% if current_menu.photo == img %}checked{% endif %}>
-                <label for="img_{{ loop.index }}" class="cursor-pointer">
-                    <img src="{{ img }}" alt="Фото меню" class="w-16 h-16 object-cover rounded-md">
-                </label>
-            </div>
-        {% endfor %}
-    </div>
 </div>
 
 
