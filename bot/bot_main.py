@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from aiogram import Bot, Dispatcher, types, Router
+import aiogram
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -115,7 +116,14 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
     if not menu:
         text = "Меню не найдено."
         if message:
-            await bot.send_message(chat_id, text)
+            try:
+                await bot.edit_message_text(text, chat_id, message.message_id)  # редактируем текст
+            except aiogram.exceptions.TelegramBadRequest as e:
+                if "message can't be edited" in str(e):
+                    # Если сообщение не может быть отредактировано, отправляем новое
+                    await bot.send_message(chat_id, text)
+                else:
+                    raise e  # Пробрасываем другие ошибки
         else:
             await bot.send_message(chat_id, text)
         return
@@ -167,9 +175,29 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
 
     # Отправляем фото, если оно есть
     if menu.get("photo"):
-        await bot.send_photo(chat_id, photo=menu["photo"], caption=menu["text"], reply_markup=markup)
+        if message:
+            try:
+                await bot.edit_message_media(media=types.InputMediaPhoto(menu["photo"], caption=menu["text"]), chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
+            except aiogram.exceptions.TelegramBadRequest as e:
+                if "message can't be edited" in str(e):
+                    await bot.send_photo(chat_id, photo=menu["photo"], caption=menu["text"], reply_markup=markup)
+                else:
+                    raise e
+        else:
+            await bot.send_photo(chat_id, photo=menu["photo"], caption=menu["text"], reply_markup=markup)
     else:
-        await bot.send_message(chat_id, menu["text"], reply_markup=markup)
+        if message:
+            try:
+                await bot.edit_message_text(menu["text"], chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
+            except aiogram.exceptions.TelegramBadRequest as e:
+                if "message can't be edited" in str(e):
+                    await bot.send_message(chat_id, menu["text"], reply_markup=markup)
+                else:
+                    raise e
+        else:
+            await bot.send_message(chat_id, menu["text"], reply_markup=markup)
+
+
 
 
 
@@ -186,7 +214,11 @@ async def handle_callback(callback: types.CallbackQuery):
 
 @router.message()
 async def handle_message(message: types.Message):
+    # Пропускаем обработку, если это не команда "start"
+    if message.text.lower() != "/start":
+        return
     await send_menu(message.chat.id, "main", message)
+
 
 
 async def start_bot():

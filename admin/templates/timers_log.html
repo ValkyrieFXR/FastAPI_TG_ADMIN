@@ -1,31 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Лог таймеров{% endblock %}
-{% block content %}
-<h2>История созданных таймеров</h2>
 
-<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
-  <tr>
-    <th>Меню</th>
-    <th>Кнопка</th>
-    <th>Время открытия</th>
-    <th>Создано в</th>
-    <th>Действия</th>
-  </tr>
-  {% for timer in timers_log %}
-  <tr>
-    <td>{{ timer.menu_key }}</td>
-    <td>{{ timer.button_text }}</td>
-    <td>{{ timer.timer_time }}</td>
-    <td>{{ timer.created_at }}</td>
-    <td>
-      <form method="post" action="/delete_timer" style="display:inline;">
-        <input type="hidden" name="timer_id" value="{{ timer.id }}">
-        <button type="submit" onclick="return confirm('Удалить этот таймер?')">Удалить</button>
-      </form>
-    </td>
-  </tr>
-  {% else %}
-  <tr><td colspan="5">Таймеры не найдены.</td></tr>
-  {% endfor %}
-</table>
+{% block title %}Лог таймеров{% endblock %}
+
+{% block content %}
+<div class="mx-auto p-2 md:p-6">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">История созданных таймеров</h2>
+
+    <!-- Таблица с логами таймеров -->
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
+        <table class="min-w-full table-auto border-collapse">
+            <thead>
+                <tr class="text-left">
+                    <th class="text-sm font-medium text-gray-700 py-3 px-4">Меню</th>
+                    <th class="text-sm font-medium text-gray-700 py-3 px-4">Кнопка</th>
+                    <th class="text-sm font-medium text-gray-700 py-3 px-4">Создано в</th>
+                    <th class="text-sm font-medium text-gray-700 py-3 px-4">Время открытия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for timer in timers_log %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50">
+                        <td class="py-3 px-4 text-sm text-gray-700">{{ timer.menu_key }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-700">{{ timer.button_text }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-700">{{ timer.created_at }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-700">{{ timer.timer_time }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-sm text-gray-600">Таймеры не найдены.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

@@ -1,48 +1,50 @@
 {% extends "base.html" %}
+
 {% block title %}Настройка таймеров{% endblock %}
+
 {% block content %}
-<h2>Настройка таймеров меню "{{ current_key }}"</h2>
+<div class="mx-auto p-2 md:p-6">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">Настройка таймеров для меню "{{ current_key }}"</h2>
 
-<form method="get" action="/edit_timers">
-  <label for="menu_select">Выберите меню для настройки таймеров:</label>
-  <select name="menu_key" id="menu_select" onchange="this.form.submit()">
-    {% for key in menu_keys %}
-      <option value="{{ key }}" {% if key == current_key %}selected{% endif %}>{{ key }}</option>
-    {% endfor %}
-  </select>
-</form>
+    <!-- Форма для выбора меню -->
+    <form method="get" action="/edit_timers" class="space-y-4">
+        <label class="text-sm font-medium text-gray-700">Выберите меню для настройки таймеров:</label>
+        <select name="menu_key" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500" onchange="this.form.submit()">
+            {% for key in menu_keys %}
+                <option value="{{ key }}" {% if key == current_key %}selected{% endif %}>{{ key }}</option>
+            {% endfor %}
+        </select>
+    </form>
 
-<form method="post" action="/save_timers">
-  <input type="hidden" name="menu_key" value="{{ current_key }}">
-  <input type="hidden" name="total_buttons" value="{{ buttons|length }}">
+    <form method="post" action="/save_timers" class="space-y-6 mt-6">
+        <input type="hidden" name="menu_key" value="{{ current_key }}">
+        <input type="hidden" name="total_buttons" value="{{ buttons|length }}">
 
-  <label>Открыть всё меню с:</label>
-  <input type="datetime-local" name="menu_start" value="{{ menu.get('timers', {}).get('menu_start', '') }}"><br><br>
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Таймеры для кнопок:</h3>
 
-  <h3>Таймеры для кнопок:</h3>
-  {% for btn in buttons %}
-    <div style="margin-bottom: 12px; padding: 10px; border: 1px solid #ccc;">
-      <strong>{{ btn.text }}</strong><br>
-      <input type="hidden" name="button_text_{{ loop.index }}" value="{{ btn.text }}">
-      
-      <!-- Если кнопка завершила таймер, очищаем поле -->
-      <input type="datetime-local" name="button_timer_{{ loop.index }}" 
-        value="{% if button_timers[btn.text] %}{{ button_timers[btn.text] }}{% else %} {% endif %}">
-      
-      <span>
-        {{ button_statuses[btn.text] }}  <!-- Используем переданный статус кнопки -->
-      </span>
-      <!-- Добавляем JavaScript для проверки, активна ли кнопка -->
-      <a href="javascript:void(0)" onclick="checkButtonStatus('{{ btn.text }}')" style="margin-left: 10px;">Публиковать сейчас</a>
-    </div>
-  {% endfor %}
-  <br>
-  <button type="submit">Сохранить</button>
-</form>
+        <!-- Таймеры для каждой кнопки -->
+        {% for btn in buttons %}
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 mb-6">
+                <h4 class="font-semibold text-gray-800">{{ btn.text }}</h4>
+                <input type="hidden" name="button_text_{{ loop.index }}" value="{{ btn.text }}">
+                
+                <!-- Поле для ввода таймера -->
+                <label class="text-sm font-medium text-gray-700">Время активации:</label>
+                <input type="datetime-local" name="button_timer_{{ loop.index }}" value="{% if button_timers[btn.text] %}{{ button_timers[btn.text] }}{% else %} {% endif %}" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500">
+                
+                <!-- Статус кнопки -->
+                <div class="mt-2">
+                    <span class="text-sm text-gray-700">{{ button_statuses[btn.text] }}</span>
+                    <a href="javascript:void(0)" onclick="checkButtonStatus('{{ btn.text }}')" class="text-blue-500 hover:underline ml-4">Публиковать сейчас</a>
+                </div>
+            </div>
+        {% endfor %}
 
-<hr>
+        <button type="submit" class="w-full py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 transition-colors">Сохранить изменения</button>
+    </form>
+</div>
 
-<!-- JavaScript для проверки состояния кнопки и вывода alert -->
+<!-- JavaScript для проверки состояния кнопки -->
 <script>
   function checkButtonStatus(buttonText) {
     var buttonStatus = {{ button_statuses | tojson }};
@@ -54,4 +56,5 @@
     }
   }
 </script>
+
 {% endblock %}
