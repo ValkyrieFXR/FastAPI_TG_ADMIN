@@ -9,6 +9,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
 import os
 import uuid  # Для id в логе, если потребуется
+from admin.admin_main import timers_log_page
 from database import save_menu_to_db, get_menu_from_db, save_timer_log_to_db, save_user_to_db
 
 BOT_TOKEN = "8172830780:AAFfWHaBsCeFe7I7gdQCdS-uKy37Gx-PM1Q"
@@ -23,17 +24,17 @@ def load_menu():
 
 def write_bot_status(running: bool):
     try:
-        with open(BOT_STATUS_FILE, "w", encoding="utf-8") as f:
+        with open(BOT_STATUS_FILE, "w", encoding="utf-8") as f: # type: ignore
             json.dump({"running": running}, f)
     except Exception:
         pass
 
 # === Лог таймеров ===
 def load_timers_log():
-    if not os.path.exists(timers_log_path):
+    if not os.path.exists(timers_log_page):
         return []
     try:
-        with open(timers_log_path, "r", encoding="utf-8") as f:
+        with open(timers_log_page, "r", encoding="utf-8") as f:
             timers_log = json.load(f)
 
             # Получаем меню для проверки актуальных таймеров
@@ -52,7 +53,7 @@ def load_timers_log():
 
 def save_timers_log(data):
     try:
-        with open(timers_log_path, "w", encoding="utf-8") as f:
+        with open(timers_log_page, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
@@ -195,12 +196,12 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
             await bot.send_message(chat_id, menu.text, reply_markup=markup)
 
 # Обработчик команды /start
-@dp.message_handler(Command("start"))
+@router.message(Command("start"))
 async def handle_start(message: types.Message):
     await send_menu(message.chat.id, "main", message)
 
 # Обработчик callback-запросов
-@dp.callback_query_handler()
+@router.callback_query()
 async def handle_callback(callback: types.CallbackQuery):
     await callback.answer()
     await send_menu(callback.message.chat.id, callback.data, callback.message)

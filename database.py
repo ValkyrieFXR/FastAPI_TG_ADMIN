@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.future import select
 from datetime import datetime
+from sqlalchemy.orm import declarative_base
 
 # Загружаем строку подключения из переменных окружения
 DATABASE_URL = "postgresql+asyncpg://valkyriefx:Q123456789@89.169.46.190:5432/tg_bot"
