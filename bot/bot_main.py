@@ -197,10 +197,6 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
         else:
             await bot.send_message(chat_id, menu["text"], reply_markup=markup)
 
-
-
-
-
 @router.message(Command("start"))
 async def handle_start(message: types.Message):
     await send_menu(message.chat.id, "main", message)
