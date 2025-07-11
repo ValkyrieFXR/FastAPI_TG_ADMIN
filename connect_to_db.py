@@ -6,7 +6,7 @@ from psycopg2 import OperationalError
 try:
     # Подключение к базе данных
     conn = psycopg2.connect(
-        host="192.168.0.4",  # IP-адрес сервера
+        host="89.169.46.190",  # IP-адрес сервера
         database="tg_bot",    # Имя базы данных
         user="valkyriefx",    # Имя пользователя
         password="Q123456789" # Пароль
