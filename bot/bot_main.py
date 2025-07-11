@@ -8,7 +8,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
 import os
-import uuid  # Для id в логе, если потребуется
+import uuid
 from admin.admin_main import timers_log_page
 from database import save_menu_to_db, get_menu_from_db, save_timer_log_to_db, save_user_to_db
 
@@ -26,7 +26,7 @@ async def load_menu():
 
 def write_bot_status(running: bool):
     try:
-        with open(BOT_STATUS_FILE, "w", encoding="utf-8") as f:  # type: ignore
+        with open(BOT_STATUS_FILE, "w", encoding="utf-8") as f:
             json.dump({"running": running}, f)
     except Exception:
         pass
@@ -106,7 +106,7 @@ def get_keyboard(buttons, groups=None):
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
-
+# Асинхронный обработчик для отправки меню
 async def send_menu(chat_id, menu_key, message: types.Message = None):
     menu = await get_menu_from_db(menu_key)
     if not menu:
