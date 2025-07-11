@@ -405,6 +405,6 @@ async def delete_timer(timer_id: str = Form(...)):
 
 async def start_admin():
     import uvicorn
-    config = uvicorn.Config("admin.admin_main:app", host="127.0.0.1", port=8000, log_level="info")
+    config = uvicorn.Config("admin.admin_main:app", host="0.0.0.0", port=8000, log_level="info")
     server = uvicorn.Server(config)
     await server.serve()
