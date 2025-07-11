@@ -253,6 +253,14 @@ async def save_user(message: types.Message):
     await message.answer(f"Пользователь {name} добавлен в базу данных!")
 
 # Запуск бота
+async def start_bot():
+    write_bot_status(True)
+    dp.include_router(router)
+    try:
+        await dp.start_polling(bot)
+    finally:
+        write_bot_status(False)
+
 if __name__ == "__main__":
-    from aiogram import executor
-    executor.start_polling(dp)
+    import asyncio
+    asyncio.run(start_bot())
