@@ -13,52 +13,50 @@ from admin.admin_main import timers_log_page
 from database import save_menu_to_db, get_menu_from_db, save_timer_log_to_db, save_user_to_db
 
 BOT_TOKEN = "8172830780:AAFfWHaBsCeFe7I7gdQCdS-uKy37Gx-PM1Q"
+BOT_STATUS_FILE = "admin/bot_status.json"
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 
-def load_menu():
-    # Загрузка меню из базы данных
-    return {}
+# === Функция для получения меню из базы данных ===
+async def load_menu():
+    # Получаем меню из базы данных
+    return await get_menu_from_db()
 
 def write_bot_status(running: bool):
     try:
-        with open(BOT_STATUS_FILE, "w", encoding="utf-8") as f: # type: ignore
+        with open(BOT_STATUS_FILE, "w", encoding="utf-8") as f:  # type: ignore
             json.dump({"running": running}, f)
     except Exception:
         pass
 
 # === Лог таймеров ===
-def load_timers_log():
-    if not os.path.exists(timers_log_page):
-        return []
+async def load_timers_log():
     try:
-        with open(timers_log_page, "r", encoding="utf-8") as f:
-            timers_log = json.load(f)
+        timers_log = await timers_log_page()
 
-            # Получаем меню для проверки актуальных таймеров
-            menu_data = load_menu()
+        # Получаем меню для проверки актуальных таймеров
+        menu_data = await load_menu()
 
-            # Фильтруем записи в логе, исключая завершённые таймеры
-            filtered_timers = [
-                timer for timer in timers_log
-                if "button_delays" in menu_data.get(timer["menu_key"], {}).get("timers", {})
-                and timer["button_text"] in menu_data[timer["menu_key"]]["timers"]["button_delays"]
-            ]
-            
-            return filtered_timers
+        # Фильтруем записи в логе, исключая завершённые таймеры
+        filtered_timers = [
+            timer for timer in timers_log
+            if "button_delays" in menu_data.get(timer["menu_key"], {}).get("timers", {})
+            and timer["button_text"] in menu_data[timer["menu_key"]]["timers"]["button_delays"]
+        ]
+        
+        return filtered_timers
     except Exception:
         return []
 
-def save_timers_log(data):
+async def save_timers_log(data):
     try:
-        with open(timers_log_page, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        await save_timer_log_to_db(data)
     except Exception:
         pass
 
-def is_button_active(button, button_delays):
+async def is_button_active(button, button_delays):
     now = datetime.now()
     delay = button_delays.get(button["text"])
     if delay:
@@ -127,7 +125,7 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
         return
 
     now = datetime.now()
-    timers = menu.timers
+    timers = menu.get("timers", {})
     menu_start = timers.get("menu_start")
     if menu_start:
         try:
@@ -138,8 +136,8 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
         except Exception:
             pass
 
-    buttons = menu.buttons
-    groups = menu.button_groups
+    buttons = menu.get("buttons", [])
+    groups = menu.get("button_groups", [1] * len(buttons))
     button_delays = timers.get("button_delays", {})
 
     def is_visible(b):
@@ -171,29 +169,29 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
 
     markup = get_keyboard(visible_buttons, visible_groups)
 
-     # Отправляем фото, если оно есть
-    if menu.photo:
+    # Отправляем фото, если оно есть
+    if menu.get("photo"):
         if message:
             try:
-                await bot.edit_message_media(media=types.InputMediaPhoto(menu.photo, caption=menu.text), chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
+                await bot.edit_message_media(media=types.InputMediaPhoto(menu["photo"], caption=menu["text"]), chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
             except aiogram.exceptions.TelegramBadRequest as e:
                 if "message can't be edited" in str(e):
-                    await bot.send_photo(chat_id, photo=menu.photo, caption=menu.text, reply_markup=markup)
+                    await bot.send_photo(chat_id, photo=menu["photo"], caption=menu["text"], reply_markup=markup)
                 else:
                     raise e
         else:
-            await bot.send_photo(chat_id, photo=menu.photo, caption=menu.text, reply_markup=markup)
+            await bot.send_photo(chat_id, photo=menu["photo"], caption=menu["text"], reply_markup=markup)
     else:
         if message:
             try:
-                await bot.edit_message_text(menu.text, chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
+                await bot.edit_message_text(menu["text"], chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
             except aiogram.exceptions.TelegramBadRequest as e:
                 if "message can't be edited" in str(e):
-                    await bot.send_message(chat_id, menu.text, reply_markup=markup)
+                    await bot.send_message(chat_id, menu["text"], reply_markup=markup)
                 else:
                     raise e
         else:
-            await bot.send_message(chat_id, menu.text, reply_markup=markup)
+            await bot.send_message(chat_id, menu["text"], reply_markup=markup)
 
 # Обработчик команды /start
 @router.message(Command("start"))
@@ -206,7 +204,6 @@ async def handle_callback(callback: types.CallbackQuery):
     await callback.answer()
     await send_menu(callback.message.chat.id, callback.data, callback.message)
 
-
 @router.message()
 async def handle_message(message: types.Message):
     # Пропускаем обработку, если это не команда "start"
@@ -214,24 +211,8 @@ async def handle_message(message: types.Message):
         return
     await send_menu(message.chat.id, "main", message)
 
-
-async def start_bot():
-    write_bot_status(True)
-    dp.include_router(router)
-
-    try:
-        await dp.start_polling(bot)
-    finally:
-        write_bot_status(False)
-
-# Обработчик callback-запросов
-@dp.callback_query_handler()
-async def handle_callback(callback: types.CallbackQuery):
-    await callback.answer()
-    await send_menu(callback.message.chat.id, callback.data, callback.message)
-
 # Пример сохранения нового меню в базу данных
-@dp.message_handler(commands=["save_menu"])
+@router.message(Command("save_menu"))
 async def save_sample_menu(message: types.Message):
     menu_key = "main"
     text = "Добро пожаловать в меню!"
@@ -248,7 +229,7 @@ async def save_sample_menu(message: types.Message):
     await message.answer("Меню сохранено в базу данных!")
 
 # Пример добавления таймера в базу данных
-@dp.message_handler(commands=["save_timer_log"])
+@router.message(Command("save_timer_log"))
 async def save_timer_log(message: types.Message):
     timer_id = str(uuid.uuid4())
     menu_key = "main"
@@ -260,7 +241,7 @@ async def save_timer_log(message: types.Message):
     await message.answer("Таймер добавлен в базу данных!")
 
 # Пример добавления пользователя в базу данных
-@dp.message_handler(commands=["save_user"])
+@router.message(Command("save_user"))
 async def save_user(message: types.Message):
     user_id = message.from_user.id
     name = message.from_user.full_name
