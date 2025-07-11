@@ -1,13 +1,12 @@
+import asyncio
 import json
 from datetime import datetime
 from aiogram import Bot, Dispatcher, types, Router
-import aiogram
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
-import os
 import uuid
 from admin.admin_main import timers_log_page
 from database import save_menu_to_db, get_menu_from_db, save_timer_log_to_db, save_user_to_db
@@ -26,7 +25,7 @@ async def load_menu():
 
 def write_bot_status(running: bool):
     try:
-        with open(BOT_STATUS_FILE, "w", encoding="utf-8") as f:
+        with open(BOT_STATUS_FILE, "w", encoding="utf-8") as f:  # type: ignore
             json.dump({"running": running}, f)
     except Exception:
         pass
