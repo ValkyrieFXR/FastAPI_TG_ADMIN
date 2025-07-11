@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from datetime import datetime
 
 # Загружаем строку подключения из переменных окружения
-DATABASE_URL = "postgresql+asyncpg://valkyriefx:Q123456789@192.168.0.4:5432/tg_bot"
+DATABASE_URL = "postgresql+asyncpg://valkyriefx:Q123456789@89.169.46.190:5432/tg_bot"
 
 # Создание асинхронного подключения
 engine = create_async_engine(DATABASE_URL, echo=True)
