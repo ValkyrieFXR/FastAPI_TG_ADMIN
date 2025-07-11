@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, JSON
+from sqlalchemy import Column, Integer, String, Text, JSON, DateTime  # Импортируем DateTime
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()  # Теперь определяем Base здесь, чтобы избежать циклического импорта
+Base = declarative_base()
 
 class Menu(Base):
     __tablename__ = "menus"
@@ -18,5 +18,5 @@ class TimerLog(Base):
     id = Column(String, primary_key=True)
     menu_key = Column(String)
     button_text = Column(String)
-    timer_time = Column(DateTime)
+    timer_time = Column(DateTime)  # Теперь тип DateTime импортирован
     created_at = Column(DateTime)
