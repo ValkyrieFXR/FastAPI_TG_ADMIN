@@ -1,15 +1,22 @@
 from sqlalchemy import Column, Integer, String, Text, JSON
-from database import Base
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()  # Теперь определяем Base здесь, чтобы избежать циклического импорта
 
 class Menu(Base):
     __tablename__ = "menus"
-    __table_args__ = {"extend_existing": True}  # 👈 Добавь это
-
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     key = Column(String, unique=True, index=True)
     text = Column(Text)
-    photo = Column(String, nullable=True)
     buttons = Column(JSON)
+    photo = Column(String, nullable=True)
     button_groups = Column(JSON)
-    timers = Column(JSON, nullable=True)
+    timers = Column(JSON, default={})
 
+class TimerLog(Base):
+    __tablename__ = "timers_log"
+    id = Column(String, primary_key=True)
+    menu_key = Column(String)
+    button_text = Column(String)
+    timer_time = Column(DateTime)
+    created_at = Column(DateTime)
