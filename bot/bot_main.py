@@ -9,19 +9,17 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
 import os
 import uuid  # Для id в логе, если потребуется
+from database import save_menu_to_db, get_menu_from_db, save_timer_log_to_db, save_user_to_db
 
 BOT_TOKEN = "8172830780:AAFfWHaBsCeFe7I7gdQCdS-uKy37Gx-PM1Q"
-BOT_STATUS_FILE = "admin/bot_status.json"
-menu_path = "admin/menu_data.json"
-timers_log_path = "admin/timers_log.json"  # Путь к логу таймеров
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 
 def load_menu():
-    with open(menu_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    # Загрузка меню из базы данных
+    return {}
 
 def write_bot_status(running: bool):
     try:
@@ -111,8 +109,7 @@ def get_keyboard(buttons, groups=None):
 
 
 async def send_menu(chat_id, menu_key, message: types.Message = None):
-    menu_data = load_menu()
-    menu = menu_data.get(menu_key)
+    menu = await get_menu_from_db(menu_key)
     if not menu:
         text = "Меню не найдено."
         if message:
@@ -129,7 +126,7 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
         return
 
     now = datetime.now()
-    timers = menu.get("timers", {})
+    timers = menu.timers
     menu_start = timers.get("menu_start")
     if menu_start:
         try:
@@ -140,8 +137,8 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
         except Exception:
             pass
 
-    buttons = menu.get("buttons", [])
-    groups = menu.get("button_groups", [1] * len(buttons))
+    buttons = menu.buttons
+    groups = menu.button_groups
     button_delays = timers.get("button_delays", {})
 
     def is_visible(b):
@@ -173,36 +170,37 @@ async def send_menu(chat_id, menu_key, message: types.Message = None):
 
     markup = get_keyboard(visible_buttons, visible_groups)
 
-    # Отправляем фото, если оно есть
-    if menu.get("photo"):
+     # Отправляем фото, если оно есть
+    if menu.photo:
         if message:
             try:
-                await bot.edit_message_media(media=types.InputMediaPhoto(menu["photo"], caption=menu["text"]), chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
+                await bot.edit_message_media(media=types.InputMediaPhoto(menu.photo, caption=menu.text), chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
             except aiogram.exceptions.TelegramBadRequest as e:
                 if "message can't be edited" in str(e):
-                    await bot.send_photo(chat_id, photo=menu["photo"], caption=menu["text"], reply_markup=markup)
+                    await bot.send_photo(chat_id, photo=menu.photo, caption=menu.text, reply_markup=markup)
                 else:
                     raise e
         else:
-            await bot.send_photo(chat_id, photo=menu["photo"], caption=menu["text"], reply_markup=markup)
+            await bot.send_photo(chat_id, photo=menu.photo, caption=menu.text, reply_markup=markup)
     else:
         if message:
             try:
-                await bot.edit_message_text(menu["text"], chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
+                await bot.edit_message_text(menu.text, chat_id=chat_id, message_id=message.message_id, reply_markup=markup)
             except aiogram.exceptions.TelegramBadRequest as e:
                 if "message can't be edited" in str(e):
-                    await bot.send_message(chat_id, menu["text"], reply_markup=markup)
+                    await bot.send_message(chat_id, menu.text, reply_markup=markup)
                 else:
                     raise e
         else:
-            await bot.send_message(chat_id, menu["text"], reply_markup=markup)
+            await bot.send_message(chat_id, menu.text, reply_markup=markup)
 
-@router.message(Command("start"))
+# Обработчик команды /start
+@dp.message_handler(Command("start"))
 async def handle_start(message: types.Message):
     await send_menu(message.chat.id, "main", message)
 
-
-@router.callback_query()
+# Обработчик callback-запросов
+@dp.callback_query_handler()
 async def handle_callback(callback: types.CallbackQuery):
     await callback.answer()
     await send_menu(callback.message.chat.id, callback.data, callback.message)
@@ -216,7 +214,6 @@ async def handle_message(message: types.Message):
     await send_menu(message.chat.id, "main", message)
 
 
-
 async def start_bot():
     write_bot_status(True)
     dp.include_router(router)
@@ -225,3 +222,55 @@ async def start_bot():
         await dp.start_polling(bot)
     finally:
         write_bot_status(False)
+
+# Обработчик callback-запросов
+@dp.callback_query_handler()
+async def handle_callback(callback: types.CallbackQuery):
+    await callback.answer()
+    await send_menu(callback.message.chat.id, callback.data, callback.message)
+
+# Пример сохранения нового меню в базу данных
+@dp.message_handler(commands=["save_menu"])
+async def save_sample_menu(message: types.Message):
+    menu_key = "main"
+    text = "Добро пожаловать в меню!"
+    buttons = [
+        {"text": "Кнопка 1", "callback": "callback1"},
+        {"text": "Кнопка 2", "callback": "callback2"}
+    ]
+    photo = None
+    button_groups = [1, 1]
+    timers = {}
+
+    # Сохраняем меню в БД
+    await save_menu_to_db(menu_key, text, buttons, photo, button_groups, timers)
+    await message.answer("Меню сохранено в базу данных!")
+
+# Пример добавления таймера в базу данных
+@dp.message_handler(commands=["save_timer_log"])
+async def save_timer_log(message: types.Message):
+    timer_id = str(uuid.uuid4())
+    menu_key = "main"
+    button_text = "Кнопка 1"
+    timer_time = datetime.now()
+    created_at = datetime.now()
+
+    await save_timer_log_to_db(timer_id, menu_key, button_text, timer_time, created_at)
+    await message.answer("Таймер добавлен в базу данных!")
+
+# Пример добавления пользователя в базу данных
+@dp.message_handler(commands=["save_user"])
+async def save_user(message: types.Message):
+    user_id = message.from_user.id
+    name = message.from_user.full_name
+    groups = []
+    menu_access = ["main"]
+    is_blocked = False
+
+    await save_user_to_db(user_id, name, groups, menu_access, is_blocked)
+    await message.answer(f"Пользователь {name} добавлен в базу данных!")
+
+# Запуск бота
+if __name__ == "__main__":
+    from aiogram import executor
+    executor.start_polling(dp)
